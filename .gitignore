@@ -5,6 +5,16 @@ build/
 dist/
 wheels/
 *.egg-info
+.python-version
+.mypy_cache/
+.ruff_cache/
 
 # Virtual environments
 .venv
+
+# OS files
+.DS_Store
+
+# Coding agents
+.serena/
+.claude/
