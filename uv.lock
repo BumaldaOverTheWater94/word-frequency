@@ -162,6 +162,11 @@ dependencies = [
     { name = "tqdm" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "ruff" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "fire", specifier = ">=0.7.1" },
@@ -170,6 +175,9 @@ requires-dist = [
     { name = "spacy", specifier = ">=3.8.7" },
     { name = "tqdm", specifier = ">=0.0.1" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "ruff", specifier = ">=0.12.11" }]
 
 [[package]]
 name = "idna"

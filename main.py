@@ -1,16 +1,17 @@
 import sys
 from typing import Generator
 import spacy
-import csv
 from collections import Counter
-import os
 from loguru import logger
 import gc
 import math
 import time
 from tqdm import tqdm
 import fire
+from db import CountsDB
 
+# remove default sink
+logger.remove()
 logger.add(
     sys.stdout, colorize=True, format="<green>{time}</green> <level>{message}</level>"
 )
@@ -35,6 +36,12 @@ def load_model(max_length: int) -> spacy.Language:
     nlp.max_length = max_length
     logger.info(f"Loaded model with max length {max_length}")
     return nlp
+
+
+def init_database(output_filepath: str):
+    db = CountsDB(output_filepath[:-4] + ".db")
+    logger.info(f"Initialized database at {output_filepath[:-4] + '.db'}")
+    return db
 
 
 def filter_token(token: spacy.tokens.Token) -> bool:
@@ -72,7 +79,7 @@ def process(
     nlp: spacy.Language,
     text_generator: Generator[str, None, None],
     total_chunks: int,
-    output_filepath: str,
+    db: CountsDB,
     batch_size: int,
     n_process: int,
 ):
@@ -84,41 +91,14 @@ def process(
             text_generator,
             batch_size=batch_size,
             n_process=n_process,
+            as_tuples=False,
         ),
         total=total_chunks,
-        as_tuples=False,
-        yield_when_ready=True,
     ):
         tokens = lemmatize_text(doc)
-        update_csv(tokens, output_filepath)
+        db.bump_many(tokens.items())
         gc.collect()
-
-
-def _read_existing_freqs(filepath: str) -> Counter[str]:
-    c: Counter[str] = Counter()
-    with open(filepath, "r", newline="", encoding="utf-8") as f:
-        reader = csv.reader(f)
-        for word, freq in reader:
-            try:
-                c.update({word: int(freq)})
-            except ValueError:
-                logger.warning(f"Invalid frequency for word {word}")
-                continue
-    return c
-
-
-# merge existing dataset with new word frequencies
-def update_csv(tokens: Counter[str], filepath: str):
-    if os.path.exists(filepath):
-        c = _read_existing_freqs(filepath)
-        c.update(tokens)
-        logger.info(f"Updated existing frequencies for {len(c)} words")
-        tokens = c
-
-    rows = tokens.most_common()
-    with open(filepath, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerows(rows)
+    logger.info("Completed processing all chunks")
 
 
 def main(
@@ -135,15 +115,17 @@ def main(
     )
     start_time = time.time()
     nlp = load_model(max_length)
+    db = init_database(output_filepath)
     chunks, total_chunks = text_generator(input_filepath, chunk_size=chunk_size)
     process(
         nlp,
         chunks,
         total_chunks,
-        output_filepath,
+        db,
         batch_size=batch_size,
         n_process=n_process,
     )
+    db.export_csv(output_filepath)
     end_time = time.time()
     logger.info(f"Time taken: {end_time - start_time} seconds")
 
