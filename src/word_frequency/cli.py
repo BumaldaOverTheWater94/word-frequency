@@ -1,10 +1,10 @@
 import fire
 from loguru import logger
 import time
-from wordfreq.nlp import load_model
-from wordfreq.pipeline import init_database
-from wordfreq.text_chunker import text_generator
-from wordfreq.pipeline import process
+from word-frequency.nlp import load_model
+from word-frequency.pipeline import init_database
+from word-frequency.text_chunker import text_generator
+from word-frequency.pipeline import process
 
 
 def main(
@@ -34,6 +34,7 @@ def main(
     db.export_csv(output_filepath)
     end_time = time.time()
     logger.info(f"Time taken: {end_time - start_time} seconds")
+
 
 if __name__ == "__main__":
     fire.Fire(main)

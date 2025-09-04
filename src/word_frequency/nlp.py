@@ -2,6 +2,7 @@ import spacy
 from spacy.util import compile_infix_regex, compile_prefix_regex, compile_suffix_regex
 from loguru import logger
 
+
 def load_model(max_length: int) -> spacy.Language:
     # need parser for NER and need tagger for lemmatizer
     # even attribute_ruler is needed for lemmatization
@@ -46,19 +47,19 @@ def load_model(max_length: int) -> spacy.Language:
     ]
 
     # Combine with existing spaCy defaults
-    prefixes = list(nlp.Defaults.prefixes) + custom_prefixes # type: ignore
-    suffixes = list(nlp.Defaults.suffixes) + custom_suffixes # type: ignore
-    infixes = list(nlp.Defaults.infixes) + custom_infixes # type: ignore
+    prefixes = list(nlp.Defaults.prefixes) + custom_prefixes  # type: ignore
+    suffixes = list(nlp.Defaults.suffixes) + custom_suffixes  # type: ignore
+    infixes = list(nlp.Defaults.infixes) + custom_infixes  # type: ignore
 
     # Compile regex patterns
     prefix_regex = compile_prefix_regex(prefixes)
     suffix_regex = compile_suffix_regex(suffixes)
-    infix_regex = compile_infix_regex(infixes) # type: ignore
+    infix_regex = compile_infix_regex(infixes)  # type: ignore
 
     # Update tokenizer
-    nlp.tokenizer.prefix_search = prefix_regex.search # type: ignore
-    nlp.tokenizer.suffix_search = suffix_regex.search # type: ignore
-    nlp.tokenizer.infix_finditer = infix_regex.finditer # type: ignore
+    nlp.tokenizer.prefix_search = prefix_regex.search  # type: ignore
+    nlp.tokenizer.suffix_search = suffix_regex.search  # type: ignore
+    nlp.tokenizer.infix_finditer = infix_regex.finditer  # type: ignore
 
     logger.info(f"Loaded model with enhanced custom tokenizer, max length {max_length}")
     return nlp

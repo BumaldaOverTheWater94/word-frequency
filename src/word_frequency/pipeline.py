@@ -2,11 +2,10 @@ import spacy
 from typing import Generator
 from loguru import logger
 from tqdm import tqdm
-from wordfreq.db import CountsDB
+from word-frequency.db import CountsDB
 import gc
 from collections import Counter
-from wordfreq.tokens import filter_token
-
+from word-frequency.tokens import filter_token
 
 
 def init_database(output_filepath: str):
@@ -15,12 +14,9 @@ def init_database(output_filepath: str):
     return db
 
 
-
-
 def lemmatize_text(doc: spacy.tokens.Doc) -> Counter[str]:
     logger.info(f"Lemmatizing {len(doc)} tokens")
     return Counter(token.lemma_ for token in doc if filter_token(token))
-
 
 
 def process(
@@ -47,5 +43,3 @@ def process(
         db.bump_many(tokens.items())
         gc.collect()
     logger.info("Completed processing of all chunks")
-
-

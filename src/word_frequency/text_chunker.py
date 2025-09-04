@@ -1,6 +1,7 @@
 import math
 from loguru import logger
 
+
 def chunk_chars(t, chunk_size: int, overlap: int = 0):
     """
     Chunk text at word boundaries to avoid splitting words.
@@ -66,5 +67,3 @@ def text_generator(filepath: str, *, chunk_size: int = 500_000):
         yield from chunk_chars(t, chunk_size)
 
     return _chunks(), total_chunks
-
-
