@@ -1,10 +1,11 @@
+import time
+
 import fire
 from loguru import logger
-import time
-from word-frequency.nlp import load_model
-from word-frequency.pipeline import init_database
-from word-frequency.text_chunker import text_generator
-from word-frequency.pipeline import process
+
+from word_frequency.nlp import load_model
+from word_frequency.pipeline import init_database, process
+from word_frequency.text_chunker import text_generator
 
 
 def main(
@@ -15,7 +16,7 @@ def main(
     n_process: int = 2,
     chunk_size: int = 500_000,
     max_length: int = 550_000,
-):
+) -> None:
     logger.info(
         f"Starting to process {input_filepath} with batch size {batch_size}, n_process {n_process}, chunk size {chunk_size}, max length {max_length}"
     )

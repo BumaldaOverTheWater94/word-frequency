@@ -24,4 +24,48 @@ packages = ["src/word_frequency"]
 [dependency-groups]
 dev = [
     "ruff>=0.12.11",
+    "mypy",
+    "pytest",
+    # "pytest-cov",
+    # "pytest-mock",
+    "pytest-asyncio",
+    # "pytest-timeout",
 ]
+
+[tool.ruff]
+line-length = 140
+target-version = "py313"
+exclude = []
+
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+known-first-party = ["word_frequency"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = ["--import-mode=importlib", "--ignore=examples"]
+
+
+[tool.mypy]
+strict = true
+disallow_any_generics = false
+ignore_missing_imports = true
+

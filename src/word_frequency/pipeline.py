@@ -1,14 +1,16 @@
-import spacy
-from typing import Generator
-from loguru import logger
-from tqdm import tqdm
-from word-frequency.db import CountsDB
 import gc
 from collections import Counter
-from word-frequency.tokens import filter_token
+from collections.abc import Iterator
+
+import spacy
+from loguru import logger
+from tqdm import tqdm
+
+from word_frequency.db import CountsDB
+from word_frequency.tokens import filter_token
 
 
-def init_database(output_filepath: str):
+def init_database(output_filepath: str) -> CountsDB:
     db = CountsDB(output_filepath[:-4] + ".db")
     logger.info(f"Initialized database at {output_filepath[:-4] + '.db'}")
     return db
@@ -20,16 +22,14 @@ def lemmatize_text(doc: spacy.tokens.Doc) -> Counter[str]:
 
 
 def process(
-    nlp: spacy.Language,
+    nlp: spacy.language.Language,
     db: CountsDB,
-    text_generator: Generator[str, None, None],
+    text_generator: Iterator[str],
     total_chunks: int,
     batch_size: int,
     n_process: int,
-):
-    logger.info(
-        f"Processing {total_chunks} chunks with batch size {batch_size}, n_process {n_process}"
-    )
+) -> None:
+    logger.info(f"Processing {total_chunks} chunks with batch size {batch_size}, n_process {n_process}")
     for doc in tqdm(
         nlp.pipe(
             text_generator,
@@ -40,6 +40,6 @@ def process(
         total=total_chunks,
     ):
         tokens = lemmatize_text(doc)
-        db.bump_many(tokens.items())
+        db.bump_many(list(tokens.items()))
         gc.collect()
     logger.info("Completed processing of all chunks")

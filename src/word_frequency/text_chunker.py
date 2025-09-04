@@ -1,8 +1,10 @@
 import math
+from collections.abc import Iterator
+
 from loguru import logger
 
 
-def chunk_chars(t, chunk_size: int, overlap: int = 0):
+def chunk_chars(t: str, chunk_size: int, overlap: int = 0) -> Iterator[str]:
     """
     Chunk text at word boundaries to avoid splitting words.
 
@@ -57,13 +59,13 @@ def chunk_chars(t, chunk_size: int, overlap: int = 0):
         i = next_i
 
 
-def text_generator(filepath: str, *, chunk_size: int = 500_000):
-    with open(filepath, "r", encoding="utf-8") as f:
+def text_generator(filepath: str, *, chunk_size: int = 500_000) -> tuple[Iterator[str], int]:
+    with open(filepath, encoding="utf-8") as f:
         t = f.read().lower()
     total_chunks = math.ceil(len(t) / chunk_size)
     logger.info(f"Total chunks: {total_chunks}")
 
-    def _chunks():
+    def _chunks() -> Iterator[str]:
         yield from chunk_chars(t, chunk_size)
 
     return _chunks(), total_chunks
