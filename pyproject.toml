@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "wordfreq"
+name = "word-frequency"
 version = "0.1.0"
 description = "Word frequency analyzer"
 readme = "README.md"
@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/wordfreq"]
+packages = ["src/word-frequency"]
 
 [dependency-groups]
 dev = [
