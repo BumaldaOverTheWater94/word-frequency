@@ -9,10 +9,10 @@ description = "Word frequency analyzer"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "fire>=0.7.1",
-    "loguru>=0.7.3",
-    "spacy>=3.8.7",
-    "tqdm>=0.0.1",
+    "fire",
+    "loguru",
+    "spacy",
+    "tqdm",
 ]
 
 [project.scripts]
@@ -23,11 +23,11 @@ packages = ["src/word_frequency"]
 
 [dependency-groups]
 dev = [
-    "ruff>=0.12.11",
+    "ruff",
     "mypy",
     "pytest",
     # "pytest-cov",
-    # "pytest-mock",
+    "pytest-mock",
     "pytest-asyncio",
     # "pytest-timeout",
 ]

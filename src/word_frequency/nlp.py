@@ -58,6 +58,7 @@ def load_model(max_length: int) -> spacy.language.Language:
 
     # Update tokenizer
     tokenizer: object = nlp.tokenizer
+    # attributes are not declared in the type stubs, but they do exist at runtime
     tokenizer.prefix_search = prefix_regex.search  # type: ignore[attr-defined]
     tokenizer.suffix_search = suffix_regex.search  # type: ignore[attr-defined]
     tokenizer.infix_finditer = infix_regex.finditer  # type: ignore[attr-defined]
