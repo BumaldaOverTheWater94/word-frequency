@@ -206,6 +206,43 @@ def test_chunk_zero_overlap() -> None:
     assert len(chunks) > 1  # Should be multiple chunks
 
 
+def test_chunk_malformed_word_dropped() -> None:
+    """Test that malformed/gibberish words longer than 45 chars get dropped."""
+    # Create the exact scenario that triggers malformed word dropping:
+    # 1. First chunk: normal word + 45 non-space chars (total 50 chars)
+    # 2. Malformed section: 60+ chars with no spaces
+    # 3. When processing the malformed section, backward search finds no spaces within 45 chars
+    # 4. Since we're not at text beginning (i != 0), the malformed section gets dropped
+
+    first_chunk = "word " + "b" * 45  # 5 + 45 = 50 chars, no spaces in last 45 chars
+    malformed_section = "z" * 60  # 60-char gibberish word
+    normal_end = " end"  # Normal text after
+
+    text = first_chunk + malformed_section + normal_end
+    chunks = list(chunk_chars(text, chunk_size=50))
+
+    all_text = " ".join(chunks)
+
+    # The malformed section should be completely dropped
+    assert "z" * 60 not in all_text, "Malformed section should be dropped"
+    assert "zzz" not in all_text, "No part of malformed section should remain"
+
+    # Normal text should be preserved
+    assert "word" in all_text
+    assert "end" in all_text
+
+    # Should have exactly 2 chunks: first chunk + final word
+    assert len(chunks) == 2
+    assert chunks[0] == "word"  # First chunk gets truncated because of space detection
+    assert chunks[1] == "end"
+
+    # Standard chunk validations
+    for chunk in chunks:
+        assert len(chunk) > 0
+        assert not chunk.startswith(" ")
+        assert not chunk.endswith(" ")
+
+
 def test_text_generator_small_file(small_content_file: str) -> None:
     """Test text generator with a small file."""
     content = "Hello World Python Testing"
@@ -340,7 +377,9 @@ def test_text_generator_multiline_content(multiline_content_file: str) -> None:
 
     # Test chunk properties - what matters for NLP processing
     for i, chunk in enumerate(chunks):
-        assert len(chunk) <= 50 + 15  # Allow flexibility for word boundaries
+        # Chunks can exceed target size by at most 45 chars (longest English word) when completing words
+        assert len(chunk) <= 50 + 45  # chunk_size + longest_english_word
+        assert len(chunk) > 0  # Should have content
         assert not chunk.startswith(" ")  # No leading spaces
         # Last chunk might have trailing whitespace from original file
         if i < len(chunks) - 1:  # All chunks except the last
@@ -350,4 +389,4 @@ def test_text_generator_multiline_content(multiline_content_file: str) -> None:
     assert len(chunks) > 0
     assert all(
         len(chunk.strip()) > 0 for chunk in chunks
-    )  # No empty chunks after stripping  # No empty chunks   # No trailing spaces  # Spaces may be removed during chunking
+    )  # No empty chunks after stripping  # No empty chunks after stripping  # No empty chunks after stripping  # No empty chunks   # No trailing spaces  # Spaces may be removed during chunking
