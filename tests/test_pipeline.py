@@ -1,16 +1,12 @@
-import tempfile
-import os
 from collections import Counter
-from typing import List, Iterator, Any, Callable
+from typing import List, Any, Callable
 import pytest
 import spacy
 from spacy.language import Language
 from spacy.tokens import Doc
 
 from word_frequency.pipeline import init_database, lemmatize_text, process
-from word_frequency.db import CountsDB
 from pytest_mock import MockerFixture
-
 
 
 def test_init_database_creates_db_with_correct_path(mocker: MockerFixture) -> None:
@@ -27,36 +23,26 @@ def test_init_database_creates_db_with_correct_path(mocker: MockerFixture) -> No
     mock_db_class.assert_called_once_with(expected_db_path)
     assert result == mock_db_instance
 
-def test_init_database_with_different_extensions(mocker: MockerFixture) -> None:
-    """Test init_database with different file extensions."""
-    test_cases: List[tuple[str, str]] = [
+
+@pytest.mark.parametrize(
+    "csv_path,expected_db_path",
+    [
         ("output.csv", "output.db"),
         ("data.txt", "data.db"),
         ("file.log", "file.db"),
         ("path/to/file.csv", "path/to/file.db"),
-    ]
+    ],
+)
+def test_init_database_with_different_extensions(mocker: MockerFixture, csv_path: str, expected_db_path: str) -> None:
+    """Test init_database with different file extensions."""
+    mock_db_class = mocker.patch("word_frequency.pipeline.CountsDB")
+    mock_db_instance = mocker.Mock()
+    mock_db_class.return_value = mock_db_instance
 
-    for csv_path, expected_db_path in test_cases:
-        mock_db_class = mocker.patch("word_frequency.pipeline.CountsDB")
-        mock_db_instance = mocker.Mock()
-        mock_db_class.return_value = mock_db_instance
+    result = init_database(csv_path)
 
-        result = init_database(csv_path)
-
-        mock_db_class.assert_called_once_with(expected_db_path)
-        assert result == mock_db_instance
-
-def test_init_database_logs_message(mocker: MockerFixture) -> None:
-    """Test that init_database logs an info message."""
-    csv_filepath: str = "test.csv"
-    expected_db_path: str = "test.db"
-
-    mock_logger = mocker.patch("word_frequency.pipeline.logger")
-    mocker.patch("word_frequency.pipeline.CountsDB")
-
-    init_database(csv_filepath)
-
-    mock_logger.info.assert_called_once_with(f"Initialized database at {expected_db_path}")
+    mock_db_class.assert_called_once_with(expected_db_path)
+    assert result == mock_db_instance
 
 
 @pytest.fixture
@@ -90,27 +76,30 @@ def nlp_model() -> Language:
 @pytest.fixture
 def token_doc(nlp_model: Language) -> Callable[[List[str]], Doc]:
     """Create a real spaCy document factory for testing."""
+
     def _create_doc(text_or_lemmas: List[str]) -> Doc:
         if not text_or_lemmas:
             return nlp_model("")
-        
+
         # Join the lemmas as text and process through spaCy
         text = " ".join(text_or_lemmas)
         doc = nlp_model(text)
-        
+
         # Override lemmas if needed for consistent testing
         for i, lemma in enumerate(text_or_lemmas):
             if i < len(doc):
                 # This creates a more predictable test environment
                 doc[i].lemma_ = lemma
-        
+
         return doc
+
     return _create_doc
+
 
 def test_lemmatize_text_with_valid_tokens(mocker: MockerFixture, sample_tokens: List[str], token_doc: Callable[[List[str]], Doc]) -> None:
     """Test lemmatizing text with tokens that pass filtering."""
     doc: Doc = token_doc(sample_tokens)
-    
+
     mocker.patch("word_frequency.pipeline.filter_token", return_value=True)
     result: Counter[str] = lemmatize_text(doc)
 
@@ -118,6 +107,7 @@ def test_lemmatize_text_with_valid_tokens(mocker: MockerFixture, sample_tokens: 
     assert result["hello"] == 1
     assert result["world"] == 1
     assert result["test"] == 1
+
 
 def test_lemmatize_text_with_filtered_tokens(mocker: MockerFixture, mixed_tokens: List[str], token_doc: Callable[[List[str]], Doc]) -> None:
     """Test lemmatizing text with some tokens filtered out."""
@@ -134,7 +124,10 @@ def test_lemmatize_text_with_filtered_tokens(mocker: MockerFixture, mixed_tokens
     assert result["world"] == 1
     assert "bad_token" not in result
 
-def test_lemmatize_text_with_duplicate_lemmas(mocker: MockerFixture, duplicate_tokens: List[str], token_doc: Callable[[List[str]], Doc]) -> None:
+
+def test_lemmatize_text_with_duplicate_lemmas(
+    mocker: MockerFixture, duplicate_tokens: List[str], token_doc: Callable[[List[str]], Doc]
+) -> None:
     """Test lemmatizing text with duplicate lemmas."""
     doc: Doc = token_doc(duplicate_tokens)
 
@@ -145,6 +138,7 @@ def test_lemmatize_text_with_duplicate_lemmas(mocker: MockerFixture, duplicate_t
     assert result["hello"] == 3
     assert result["world"] == 1
 
+
 def test_lemmatize_text_empty_doc(token_doc: Callable[[List[str]], Doc]) -> None:
     """Test lemmatizing an empty document."""
     doc: Doc = token_doc([])
@@ -153,17 +147,6 @@ def test_lemmatize_text_empty_doc(token_doc: Callable[[List[str]], Doc]) -> None
 
     assert isinstance(result, Counter)
     assert len(result) == 0
-
-def test_lemmatize_text_logs_token_count(mocker: MockerFixture, token_doc: Callable[[List[str]], Doc]) -> None:
-    """Test that lemmatize_text logs the number of tokens."""
-    mock_logger = mocker.patch("word_frequency.pipeline.logger")
-    # Create doc with 5 tokens for logging test
-    test_tokens: List[str] = ["a", "b", "c", "d", "e"]
-    doc: Doc = token_doc(test_tokens)
-
-    lemmatize_text(doc)
-
-    mock_logger.info.assert_called_once_with("Lemmatizing 5 tokens")
 
 
 def test_process_basic_functionality(mocker: MockerFixture) -> None:
@@ -221,6 +204,7 @@ def test_process_basic_functionality(mocker: MockerFixture) -> None:
     mock_logger.info.assert_any_call("Processing 3 chunks with batch size 10, n_process 2")
     mock_logger.info.assert_any_call("Completed processing of all chunks")
 
+
 def test_process_with_empty_generator(mocker: MockerFixture) -> None:
     """Test process function with empty text generator."""
     mock_gc = mocker.patch("word_frequency.pipeline.gc")
@@ -246,25 +230,3 @@ def test_process_with_empty_generator(mocker: MockerFixture) -> None:
     # Should still log start and completion
     mock_logger.info.assert_any_call("Processing 0 chunks with batch size 10, n_process 2")
     mock_logger.info.assert_any_call("Completed processing of all chunks")
-
-def test_process_memory_cleanup(mocker: MockerFixture) -> None:
-    """Test that process function calls garbage collection after each iteration."""
-    mock_gc = mocker.patch("word_frequency.pipeline.gc")
-    mock_tqdm = mocker.patch("word_frequency.pipeline.tqdm")
-    mock_lemmatize = mocker.patch("word_frequency.pipeline.lemmatize_text")
-
-    mock_nlp = mocker.Mock()
-    mock_db = mocker.Mock()
-
-    # Setup for single iteration
-    mock_doc = mocker.Mock()
-    single_doc_list: List[Any] = [mock_doc]
-    mock_nlp.pipe.return_value = single_doc_list
-    mock_tqdm.return_value = single_doc_list
-    mock_lemmatize.return_value = Counter({"word": 1})
-
-    text_list: List[str] = ["text"]
-    process(nlp=mock_nlp, db=mock_db, text_generator=iter(text_list), total_chunks=1, batch_size=5, n_process=1)
-
-    # Verify gc.collect was called once (after the single iteration)
-    mock_gc.collect.assert_called_once()

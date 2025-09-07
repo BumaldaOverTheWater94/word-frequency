@@ -29,9 +29,10 @@ def chunk_chars(t: str, chunk_size: int, overlap: int = 0) -> Iterator[str]:
             break
 
         # Look backwards from target_end to find a word boundary
-        # Search within reasonable distance (up to 20% of chunk_size or 500 chars max)
+        # Search backward until a word boundary is found
+        # prioritize never splitting words over honoring the chunk size
         search_distance = min(chunk_size // 5, 500)
-        actual_end = target_end
+        actual_end = None
 
         # Start searching backwards for whitespace
         for pos in range(target_end, max(target_end - search_distance, i + 1), -1):
@@ -39,16 +40,24 @@ def chunk_chars(t: str, chunk_size: int, overlap: int = 0) -> Iterator[str]:
                 actual_end = pos
                 break
 
-        # If no whitespace found backwards, look forward for next whitespace
-        if actual_end == target_end and target_end < L:
-            for pos in range(target_end, min(target_end + search_distance, L)):
+        # If still no boundary found, find the next word boundary by looking further
+        if actual_end is None:
+            # Look for the next whitespace from target_end forward (no distance limit)
+            for pos in range(target_end, L):
                 if t[pos].isspace():
                     actual_end = pos + 1
                     break
+            
+            # If no whitespace found at all, take the rest of the text
+            if actual_end is None:
+                actual_end = L
 
-        # Ensure we don't create empty chunks or infinite loops
+        # Ensure we make progress (avoid infinite loops)
         if actual_end <= i:
-            actual_end = min(i + chunk_size, L)
+            # This should only happen with very unusual text - find next non-whitespace
+            actual_end = i + 1
+            while actual_end < L and not t[actual_end].isspace():
+                actual_end += 1
 
         yield t[i:actual_end].rstrip()
 
