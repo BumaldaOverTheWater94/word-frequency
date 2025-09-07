@@ -8,7 +8,7 @@ from word_frequency.pipeline import init_database, process
 from word_frequency.text_chunker import text_generator
 
 
-def main(
+def run_word_frequency_analysis(
     input_filepath: str,
     output_filepath: str,
     *,
@@ -40,5 +40,9 @@ def main(
     logger.info(f"Time taken: {end_time - start_time} seconds")
 
 
+def main() -> None:
+    fire.Fire(run_word_frequency_analysis)
+
+
 if __name__ == "__main__":
-    fire.Fire(main)
+    main()

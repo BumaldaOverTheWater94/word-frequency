@@ -1,9 +1,10 @@
 import spacy
 from loguru import logger
 from spacy.language import Language
-from spacy.tokens import Doc
 from spacy.tokenizer import Tokenizer
+from spacy.tokens import Doc
 from spacy.util import compile_infix_regex, compile_prefix_regex, compile_suffix_regex
+
 
 @Language.component("custom_fallback_lemmatizer")
 def custom_fallback_lemmatizer(doc: Doc) -> Doc:
@@ -12,13 +13,14 @@ def custom_fallback_lemmatizer(doc: Doc) -> Doc:
     It's a fallback for when the model's default lemmatizer makes a mistake.
     """
     for token in doc:
-        is_er_or_ed_word = token.text.endswith('er') or token.text.endswith('ed')
-        is_bad_lemma = token.lemma_.endswith('e')
-        
+        is_er_or_ed_word = token.text.endswith("er") or token.text.endswith("ed")
+        is_bad_lemma = token.lemma_.endswith("e")
+
         if is_er_or_ed_word and is_bad_lemma and token.lemma_[:-1] == token.text[:-2]:
             token.lemma_ = token.text
-            
+
     return doc
+
 
 def load_model(max_length: int) -> spacy.language.Language:
     # need parser for NER and need tagger for lemmatizer
