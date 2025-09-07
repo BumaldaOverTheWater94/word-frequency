@@ -1,0 +1,40 @@
+repos:
+  # Standard hooks for basic file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+
+  # Ruff for formatting and linting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.12
+    hooks:
+      - id: ruff-format
+      - id: ruff
+        args:
+          - --fix
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.17.1
+    hooks:
+      - id: mypy
+        # mypy incompatibility issues /w python3.13+
+        language_version: python3.12
+        args:
+          - --strict
+          - --disallow-untyped-defs
+          - --disallow-incomplete-defs
+          - --no-implicit-optional
+          - --ignore-missing-imports
+        additional_dependencies:
+            - "fire"
+            - "loguru"
+            - "spacy"
+            - "tqdm"
+            - "en-core-web-trf @ https://github.com/explosion/spacy-models/releases/download/en_core_web_trf-3.8.0/en_core_web_trf-3.8.0-py3-none-any.whl"
+            - "pytest"
+            - "pytest-mock"
+            - "pytest-asyncio"
