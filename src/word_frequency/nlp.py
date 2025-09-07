@@ -9,32 +9,37 @@ def load_model(max_length: int) -> spacy.language.Language:
     nlp = spacy.load("en_core_web_trf", exclude=[])
     nlp.max_length = max_length
 
+    # Create a completely new tokenizer from scratch
+    from spacy.tokenizer import Tokenizer
+
     # Enhanced custom tokenizer to fix problematic tokenization
     # Enhanced prefix patterns - split these at the beginning of tokens
     custom_prefixes = [
         r"[\.\,\;\:\!\?\[\]\(\)\{\}]",  # Punctuation at start
-        r"[\"\'\`]",  # Quotes at start
+        r"[\"\'`]",  # Quotes at start
         r"\([0-9]+\)",  # Standalone parentheses with numbers at start
         r"[~\-]",  # Tilde and dash at start
-        r"[\"\=\+]",  # Quote-equals, plus at start
+        r"[\"=\+]",  # Quote-equals, plus at start
     ]
 
     # Enhanced suffix patterns - split these at the end of tokens
     custom_suffixes = [
         r"[\.\,\;\:\!\?\[\]\(\)\{\}]",  # Punctuation at end
-        r"[\"\'\`]",  # Quotes at end
+        r"[\"\'`]",  # Quotes at end
         r"(?<=[a-zA-Z])\d+",  # Numbers after letters
         r"(?<=[a-zA-Z])\([0-9]+\)",  # Parenthetical numbers after letters
         r"(?<=[0-9])\%",  # Percent after numbers
         r"\([0-9]+\)",  # Standalone parentheses with numbers at end
         r"(?<=[a-zA-Z])\.",  # Periods after single letters
         r"(?<=[a-zA-Z])[-~,]",  # Hyphens, tildes, and commas after letters
-        r"[\"\'][^\"\']*[\"\']",  # Complex quote patterns
-        r"[\"\=\+]",  # Quote-equals, plus at end
+        r"[\"\']+[^\"\']*[\"\']+",  # Complex quote patterns
+        r"[\"=\+]",  # Quote-equals, plus at end
     ]
 
     # Enhanced infix patterns - split within tokens
     custom_infixes = [
+        r"(?<=[a-zA-Z])\.(?=[a-zA-Z])",  # Periods between any letters (custom rule)
+        r"(?<=[a-zA-Z])\?(?=[a-zA-Z])",  # Question marks between any letters (custom rule)
         r"(?<=[A-Za-z])\(",  # Opening paren after letters
         r"(?<=[0-9])\)",  # Closing paren after numbers
         r"(?<=[A-Za-z0-9])\(",  # Opening paren after alphanumeric
@@ -43,25 +48,39 @@ def load_model(max_length: int) -> spacy.language.Language:
         r"(?<=[0-9])%\(",  # Percent-paren combo after numbers
         r"(?<=[a-zA-Z])[!~-](?=[a-zA-Z])",  # Exclamation, tildes, and hyphens within compound words
         r"\([0-9]+\)",  # Standalone parentheses with numbers within tokens
-        r"[\"\=\+]",  # Quote-equals, plus within tokens
+        r"[\"=\+]",  # Quote-equals, plus within tokens
     ]
 
-    # Combine with existing spaCy defaults
-    prefixes = list(nlp.Defaults.prefixes or []) + custom_prefixes
-    suffixes = list(nlp.Defaults.suffixes or []) + custom_suffixes
-    infixes = list(nlp.Defaults.infixes or []) + custom_infixes
+    # Essential spaCy patterns that don't conflict
+    essential_spacy_infixes = [
+        r"(?<=[0-9])[+\-\*^](?=[0-9-])",  # Math operators between numbers
+        r"(?<=[a-zA-Z]),(?=[a-zA-Z])",  # Commas between letters
+        r"(?<=[a-zA-Z])(?:--|––|—)(?=[a-zA-Z])",  # Hyphens and dashes between letters
+        r"(?<=[a-zA-Z0-9])[:<>=/](?=[a-zA-Z])",  # Symbols between letters/numbers
+    ]
+
+    # Combine patterns
+    prefixes = custom_prefixes + list(nlp.Defaults.prefixes or [])
+    suffixes = custom_suffixes + list(nlp.Defaults.suffixes or [])
+    infixes = custom_infixes + essential_spacy_infixes
 
     # Compile regex patterns
     prefix_regex = compile_prefix_regex(prefixes)
     suffix_regex = compile_suffix_regex(suffixes)
     infix_regex = compile_infix_regex(infixes)
 
-    # Update tokenizer
-    tokenizer: object = nlp.tokenizer
-    # attributes are not declared in the type stubs, but they do exist at runtime
-    tokenizer.prefix_search = prefix_regex.search  # type: ignore[attr-defined]
-    tokenizer.suffix_search = suffix_regex.search  # type: ignore[attr-defined]
-    tokenizer.infix_finditer = infix_regex.finditer  # type: ignore[attr-defined]
+    # Create a brand new tokenizer with no built-in rules
+    new_tokenizer = Tokenizer(
+        nlp.vocab,
+        rules={},  # Empty rules dict
+        prefix_search=prefix_regex.search,
+        suffix_search=suffix_regex.search,
+        infix_finditer=infix_regex.finditer,
+        token_match=None,  # No token matching
+    )
 
-    logger.info(f"Loaded model with enhanced custom tokenizer, max length {max_length}")
+    # Replace the model's tokenizer with our custom one
+    nlp.tokenizer = new_tokenizer
+
+    logger.info(f"Loaded model with completely custom tokenizer, max length {max_length}")
     return nlp

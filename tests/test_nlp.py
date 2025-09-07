@@ -18,20 +18,21 @@ def test_custom_tokenization_punctuation() -> None:
     try:
         nlp = load_model(max_length=1000)
 
-        # Test cases that should be tokenized differently with custom tokenizer
+        # Test cases that should be tokenized with custom tokenizer
         test_cases = [
-            "word,punctuation",  # Should split comma
-            "text.period",  # Should split period
-            "word!exclamation",  # Should split exclamation
-            "text?question",  # Should split question mark
-            'word"quote',  # Should split quote
-            "word(parenthesis)",  # Should split parenthesis
+            ("word,punctuation", 3),  # Should split comma: ['word', ',', 'punctuation']
+            ("text.Period", 3),  # Should split period before uppercase: ['text', '.', 'Period']
+            ("text.period", 3),  # Should split period between lowercase letters: ['text', '.', 'period']
+            ("word!exclamation", 3),  # Should split exclamation: ['word', '!', 'exclamation']
+            ("text?question", 3),  # Should split question mark between letters: ['text', '?', 'question']
+            ('word"quote', 3),  # Should split quote: ['word', '"', 'quote']
+            ("word(parenthesis)", 4),  # Should split parentheses: ['word', '(', 'parenthesis', ')']
         ]
 
-        for text in test_cases:
+        for text, expected_tokens in test_cases:
             doc = nlp(text)
-            # Should produce more than one token due to custom tokenization
-            assert len(doc) > 1, f"Failed to properly tokenize: {text}"
+            tokens = [token.text for token in doc]
+            assert len(doc) == expected_tokens, f"Expected {expected_tokens} tokens for '{text}', got {len(doc)}: {tokens}"
 
     except OSError:
         pytest.skip("spaCy model 'en_core_web_trf' not available")
