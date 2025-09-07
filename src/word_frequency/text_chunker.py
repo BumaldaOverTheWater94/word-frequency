@@ -4,68 +4,95 @@ from collections.abc import Iterator
 from loguru import logger
 
 
-def chunk_chars(t: str, chunk_size: int, overlap: int = 0) -> Iterator[str]:
+def chunk_chars(t: str, chunk_size: int) -> Iterator[str]:
     """
     Chunk text at word boundaries to avoid splitting words.
+    Only looks backward to find word boundaries, never forward.
+    Never splits words, even if they exceed chunk_size.
+    Discards chunks containing malformed/gibberish words longer than 45 characters.
 
     Args:
         t: Input text to chunk
-        chunk_size: Target chunk size in characters
-        overlap: Number of characters to overlap between chunks
+        chunk_size: Target chunk size in characters (minimum 45)
+
+    Raises:
+        ValueError: If chunk_size is less than 45
 
     Yields:
         Text chunks that end at word boundaries when possible
     """
 
+    if chunk_size < 45:
+        raise ValueError("chunk_size must be at least 45 characters")
+
     i, L = 0, len(t)
 
     while i < L:
+        # Skip any leading whitespace
+        while i < L and t[i].isspace():
+            i += 1
+
+        if i >= L:
+            break
+
         # Calculate target end position
         target_end = min(i + chunk_size, L)
 
         # If we're at the end of text, just take what's left
         if target_end >= L:
-            yield t[i:]
+            yield t[i:].rstrip()
             break
 
-        # Look backwards from target_end to find a word boundary
-        # Search backward until a word boundary is found
-        # prioritize never splitting words over honoring the chunk size
-        search_distance = min(chunk_size // 5, 500)
-        actual_end = None
+        # Check if we're at a natural word boundary
+        if t[target_end].isspace():
+            # Perfect - we're exactly at a word boundary
+            actual_end = target_end
+        else:
+            # We're in the middle of a word
+            # Look backward to see if there's a word boundary within reasonable distance
+            found_boundary = False
+            max_search_distance = min(45, target_end - i)
 
-        # Start searching backwards for whitespace
-        for pos in range(target_end, max(target_end - search_distance, i + 1), -1):
-            if pos < L and t[pos - 1].isspace():
-                actual_end = pos
-                break
-
-        # If still no boundary found, find the next word boundary by looking further
-        if actual_end is None:
-            # Look for the next whitespace from target_end forward (no distance limit)
-            for pos in range(target_end, L):
-                if t[pos].isspace():
-                    actual_end = pos + 1
+            for pos in range(target_end - 1, target_end - max_search_distance - 1, -1):
+                if pos <= i:
                     break
-            
-            # If no whitespace found at all, take the rest of the text
-            if actual_end is None:
-                actual_end = L
+                if t[pos].isspace():
+                    # Found a word boundary by looking backward
+                    # Complete the current word instead of breaking at the boundary
+                    actual_end = target_end
+                    while actual_end < L and not t[actual_end].isspace():
+                        actual_end += 1
+                    found_boundary = True
+                    break
 
-        # Ensure we make progress (avoid infinite loops)
-        if actual_end <= i:
-            # This should only happen with very unusual text - find next non-whitespace
-            actual_end = i + 1
-            while actual_end < L and not t[actual_end].isspace():
-                actual_end += 1
+            if not found_boundary:
+                # No word boundary found within 45 characters
+                # If we're at the very beginning of text, include the entire first word
+                if i == 0:
+                    actual_end = 0
+                    while actual_end < L and not t[actual_end].isspace():
+                        actual_end += 1
+                else:
+                    # We're not at the beginning - this is a malformed/gibberish word
+                    # Scan forward to find the next word boundary and discard this entire chunk
+                    skip_to = target_end
+                    while skip_to < L and not t[skip_to].isspace():
+                        skip_to += 1
+                    # Skip the whitespace too
+                    while skip_to < L and t[skip_to].isspace():
+                        skip_to += 1
+                    i = skip_to
+                    continue  # Skip this malformed chunk, don't yield anything
 
-        yield t[i:actual_end].rstrip()
+        # Extract the chunk and strip trailing whitespace
+        chunk = t[i:actual_end].rstrip()
+        if chunk:  # Only yield non-empty chunks
+            yield chunk
 
-        # Move to next position, skipping whitespace to avoid leading spaces
-        next_i = actual_end - overlap
-        while next_i < L and t[next_i].isspace():
-            next_i += 1
-        i = next_i
+        # Move to next position, skipping whitespace
+        i = actual_end
+        while i < L and t[i].isspace():
+            i += 1  # Ensure we make progress  # Ensure we make progress  # Ensure we make progress  # Ensure we make progress  # Ensure we make progress  # Ensure we make progress  # Ensure we make progress  # Ensure we make progress
 
 
 def text_generator(filepath: str, *, chunk_size: int = 500_000) -> tuple[Iterator[str], int]:

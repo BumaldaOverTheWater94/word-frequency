@@ -1,7 +1,6 @@
-import tempfile
 import csv
 import os
-from typing import List, Tuple
+import tempfile
 
 from word_frequency.db import CountsDB
 
@@ -38,14 +37,14 @@ def test_bump_many_inserts_new_words() -> None:
         db: CountsDB = CountsDB(db_path)
 
         # Insert some words
-        words: List[Tuple[str, int]] = [("hello", 3), ("world", 5), ("test", 1)]
+        words: list[tuple[str, int]] = [("hello", 3), ("world", 5), ("test", 1)]
         db.bump_many(words)
 
         # Verify insertion
         cursor = db.con.execute("SELECT word, freq FROM wc ORDER BY word")
         results = cursor.fetchall()
 
-        expected: List[Tuple[str, int]] = [("hello", 3), ("test", 1), ("world", 5)]
+        expected: list[tuple[str, int]] = [("hello", 3), ("test", 1), ("world", 5)]
         assert results == expected
 
     finally:
@@ -70,7 +69,7 @@ def test_bump_many_updates_existing_words() -> None:
         cursor = db.con.execute("SELECT word, freq FROM wc ORDER BY word")
         results = cursor.fetchall()
 
-        expected: List[Tuple[str, int]] = [("hello", 5), ("new", 1), ("world", 5)]
+        expected: list[tuple[str, int]] = [("hello", 5), ("new", 1), ("world", 5)]
         assert results == expected
 
     finally:
@@ -89,19 +88,19 @@ def test_export_csv_creates_sorted_file() -> None:
         db: CountsDB = CountsDB(db_path)
 
         # Insert test data
-        words: List[Tuple[str, int]] = [("apple", 10), ("banana", 25), ("cherry", 5), ("date", 15)]
+        words: list[tuple[str, int]] = [("apple", 10), ("banana", 25), ("cherry", 5), ("date", 15)]
         db.bump_many(words)
 
         # Export to CSV
         db.export_csv(csv_path)
 
         # Read and verify CSV content
-        with open(csv_path, "r", encoding="utf-8") as f:
+        with open(csv_path, encoding="utf-8") as f:
             reader = csv.reader(f)
-            results: List[List[str]] = list(reader)
+            results: list[list[str]] = list(reader)
 
         # Should be sorted by frequency (descending)
-        expected: List[List[str]] = [["banana", "25"], ["date", "15"], ["apple", "10"], ["cherry", "5"]]
+        expected: list[list[str]] = [["banana", "25"], ["date", "15"], ["apple", "10"], ["cherry", "5"]]
         assert results == expected
 
     finally:
@@ -122,7 +121,7 @@ def test_empty_database_export() -> None:
         db.export_csv(csv_path)
 
         # Verify empty CSV
-        with open(csv_path, "r", encoding="utf-8") as f:
+        with open(csv_path, encoding="utf-8") as f:
             content: str = f.read()
         assert content == ""
 

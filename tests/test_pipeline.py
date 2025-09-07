@@ -1,12 +1,14 @@
 from collections import Counter
-from typing import List, Any, Callable
+from collections.abc import Callable
+from typing import Any
+
 import pytest
 import spacy
+from pytest_mock import MockerFixture
 from spacy.language import Language
 from spacy.tokens import Doc
 
 from word_frequency.pipeline import init_database, lemmatize_text, process
-from pytest_mock import MockerFixture
 
 
 def test_init_database_creates_db_with_correct_path(mocker: MockerFixture) -> None:
@@ -46,19 +48,19 @@ def test_init_database_with_different_extensions(mocker: MockerFixture, csv_path
 
 
 @pytest.fixture
-def sample_tokens() -> List[str]:
+def sample_tokens() -> list[str]:
     """Provide sample token lemmas for testing."""
     return ["hello", "world", "test"]
 
 
 @pytest.fixture
-def duplicate_tokens() -> List[str]:
+def duplicate_tokens() -> list[str]:
     """Provide token lemmas with duplicates for testing."""
     return ["hello", "hello", "world", "hello"]
 
 
 @pytest.fixture
-def mixed_tokens() -> List[str]:
+def mixed_tokens() -> list[str]:
     """Provide mixed tokens where some should be filtered."""
     return ["hello", "bad_token", "world"]
 
@@ -74,10 +76,10 @@ def nlp_model() -> Language:
 
 
 @pytest.fixture
-def token_doc(nlp_model: Language) -> Callable[[List[str]], Doc]:
+def token_doc(nlp_model: Language) -> Callable[[list[str]], Doc]:
     """Create a real spaCy document factory for testing."""
 
-    def _create_doc(text_or_lemmas: List[str]) -> Doc:
+    def _create_doc(text_or_lemmas: list[str]) -> Doc:
         if not text_or_lemmas:
             return nlp_model("")
 
@@ -96,7 +98,7 @@ def token_doc(nlp_model: Language) -> Callable[[List[str]], Doc]:
     return _create_doc
 
 
-def test_lemmatize_text_with_valid_tokens(mocker: MockerFixture, sample_tokens: List[str], token_doc: Callable[[List[str]], Doc]) -> None:
+def test_lemmatize_text_with_valid_tokens(mocker: MockerFixture, sample_tokens: list[str], token_doc: Callable[[list[str]], Doc]) -> None:
     """Test lemmatizing text with tokens that pass filtering."""
     doc: Doc = token_doc(sample_tokens)
 
@@ -109,7 +111,7 @@ def test_lemmatize_text_with_valid_tokens(mocker: MockerFixture, sample_tokens: 
     assert result["test"] == 1
 
 
-def test_lemmatize_text_with_filtered_tokens(mocker: MockerFixture, mixed_tokens: List[str], token_doc: Callable[[List[str]], Doc]) -> None:
+def test_lemmatize_text_with_filtered_tokens(mocker: MockerFixture, mixed_tokens: list[str], token_doc: Callable[[list[str]], Doc]) -> None:
     """Test lemmatizing text with some tokens filtered out."""
     doc: Doc = token_doc(mixed_tokens)
 
@@ -126,7 +128,7 @@ def test_lemmatize_text_with_filtered_tokens(mocker: MockerFixture, mixed_tokens
 
 
 def test_lemmatize_text_with_duplicate_lemmas(
-    mocker: MockerFixture, duplicate_tokens: List[str], token_doc: Callable[[List[str]], Doc]
+    mocker: MockerFixture, duplicate_tokens: list[str], token_doc: Callable[[list[str]], Doc]
 ) -> None:
     """Test lemmatizing text with duplicate lemmas."""
     doc: Doc = token_doc(duplicate_tokens)
@@ -139,7 +141,7 @@ def test_lemmatize_text_with_duplicate_lemmas(
     assert result["world"] == 1
 
 
-def test_lemmatize_text_empty_doc(token_doc: Callable[[List[str]], Doc]) -> None:
+def test_lemmatize_text_empty_doc(token_doc: Callable[[list[str]], Doc]) -> None:
     """Test lemmatizing an empty document."""
     doc: Doc = token_doc([])
 
@@ -159,15 +161,15 @@ def test_process_basic_functionality(mocker: MockerFixture) -> None:
 
     mock_nlp = mocker.Mock()
     mock_db = mocker.Mock()
-    mock_text_gen: List[str] = ["text1", "text2", "text3"]
+    mock_text_gen: list[str] = ["text1", "text2", "text3"]
 
     # Mock nlp.pipe to return mock docs
-    mock_docs: List[Any] = [mocker.Mock(), mocker.Mock(), mocker.Mock()]
+    mock_docs: list[Any] = [mocker.Mock(), mocker.Mock(), mocker.Mock()]
     mock_nlp.pipe.return_value = mock_docs
     mock_tqdm.return_value = mock_docs  # tqdm returns the iterable
 
     # Mock lemmatize_text to return counters
-    mock_counters: List[Counter[str]] = [Counter({"hello": 2, "world": 1}), Counter({"test": 3, "hello": 1}), Counter({"final": 1})]
+    mock_counters: list[Counter[str]] = [Counter({"hello": 2, "world": 1}), Counter({"test": 3, "hello": 1}), Counter({"final": 1})]
     mock_lemmatize.side_effect = mock_counters
 
     # Call function
@@ -190,11 +192,11 @@ def test_process_basic_functionality(mocker: MockerFixture) -> None:
 
     # Verify db.bump_many was called for each counter
     assert mock_db.bump_many.call_count == 3
-    expected_calls: List[List[tuple[str, int]]] = [[("hello", 2), ("world", 1)], [("test", 3), ("hello", 1)], [("final", 1)]]
+    expected_calls: list[list[tuple[str, int]]] = [[("hello", 2), ("world", 1)], [("test", 3), ("hello", 1)], [("final", 1)]]
     actual_calls = [call[0][0] for call in mock_db.bump_many.call_args_list]
 
     # Sort each call for comparison (order doesn't matter)
-    for expected, actual in zip(expected_calls, actual_calls):
+    for expected, actual in zip(expected_calls, actual_calls, strict=False):
         assert sorted(expected) == sorted(actual)
 
     # Verify gc.collect was called after each iteration
@@ -216,7 +218,7 @@ def test_process_with_empty_generator(mocker: MockerFixture) -> None:
     mock_db = mocker.Mock()
 
     # Empty generator
-    empty_list: List[Any] = []
+    empty_list: list[Any] = []
     mock_nlp.pipe.return_value = empty_list
     mock_tqdm.return_value = empty_list
 
