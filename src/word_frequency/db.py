@@ -3,7 +3,7 @@ import sqlite3
 
 
 class CountsDB:
-    def __init__(self, path: str):
+    def __init__(self, path: str) -> None:
         self.con = sqlite3.connect(path, isolation_level=None)
         self.con.execute("PRAGMA journal_mode=WAL")
         self.con.execute("PRAGMA synchronous=NORMAL")

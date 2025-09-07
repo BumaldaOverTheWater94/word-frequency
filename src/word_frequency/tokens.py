@@ -81,7 +81,7 @@ def filter_token(token: spacy.tokens.Token) -> bool:
         return False
 
     # No English words repeat a letter more than twice (filters onomatopoeia)
-    if re.search(r"(.)\\1\\1+", lemma):
+    if re.search(r"(.)\1\1+", lemma):
         return False
 
     # Every English word has at least one vowel
