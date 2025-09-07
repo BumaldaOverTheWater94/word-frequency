@@ -13,17 +13,11 @@ def chunk_chars(t: str, chunk_size: int) -> Iterator[str]:
 
     Args:
         t: Input text to chunk
-        chunk_size: Target chunk size in characters (minimum 45)
-
-    Raises:
-        ValueError: If chunk_size is less than 45
+        chunk_size: Target chunk size in characters
 
     Yields:
         Text chunks that end at word boundaries when possible
     """
-
-    if chunk_size < 45:
-        raise ValueError("chunk_size must be at least 45 characters")
 
     i, L = 0, len(t)
 
@@ -45,7 +39,6 @@ def chunk_chars(t: str, chunk_size: int) -> Iterator[str]:
 
         # Check if we're at a natural word boundary
         if t[target_end].isspace():
-            # Perfect - we're exactly at a word boundary
             actual_end = target_end
         else:
             # We're in the middle of a word
@@ -92,7 +85,7 @@ def chunk_chars(t: str, chunk_size: int) -> Iterator[str]:
         # Move to next position, skipping whitespace
         i = actual_end
         while i < L and t[i].isspace():
-            i += 1  # Ensure we make progress  # Ensure we make progress  # Ensure we make progress  # Ensure we make progress  # Ensure we make progress  # Ensure we make progress  # Ensure we make progress  # Ensure we make progress
+            i += 1  # Ensure we make progress
 
 
 def text_generator(filepath: str, *, chunk_size: int = 500_000) -> tuple[Iterator[str], int]:

@@ -17,6 +17,9 @@ def main(
     chunk_size: int = 500_000,
     max_length: int = 550_000,
 ) -> None:
+    if chunk_size < 45:
+        raise ValueError("chunk_size must be at least 45 characters")
+
     logger.info(
         f"Starting to process {input_filepath} with batch size {batch_size}, n_process {n_process}, chunk size {chunk_size}, max length {max_length}"
     )
