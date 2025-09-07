@@ -1,16 +1,31 @@
 import spacy
 from loguru import logger
+from spacy.language import Language
+from spacy.tokens import Doc
+from spacy.tokenizer import Tokenizer
 from spacy.util import compile_infix_regex, compile_prefix_regex, compile_suffix_regex
 
+@Language.component("custom_fallback_lemmatizer")
+def custom_fallback_lemmatizer(doc: Doc) -> Doc:
+    """
+    This component checks for specific lemmatization errors and corrects them.
+    It's a fallback for when the model's default lemmatizer makes a mistake.
+    """
+    for token in doc:
+        is_er_or_ed_word = token.text.endswith('er') or token.text.endswith('ed')
+        is_bad_lemma = token.lemma_.endswith('e')
+        
+        if is_er_or_ed_word and is_bad_lemma and token.lemma_[:-1] == token.text[:-2]:
+            token.lemma_ = token.text
+            
+    return doc
 
 def load_model(max_length: int) -> spacy.language.Language:
     # need parser for NER and need tagger for lemmatizer
     # even attribute_ruler is needed for lemmatization
     nlp = spacy.load("en_core_web_trf", exclude=[])
     nlp.max_length = max_length
-
-    # Create a completely new tokenizer from scratch
-    from spacy.tokenizer import Tokenizer
+    nlp.add_pipe("custom_fallback_lemmatizer", after="lemmatizer")
 
     # Enhanced custom tokenizer to fix problematic tokenization
     # Enhanced prefix patterns - split these at the beginning of tokens
@@ -82,5 +97,5 @@ def load_model(max_length: int) -> spacy.language.Language:
     # Replace the model's tokenizer with our custom one
     nlp.tokenizer = new_tokenizer
 
-    logger.info(f"Loaded model with completely custom tokenizer, max length {max_length}")
+    logger.info(f"Loaded model with max length {max_length}")
     return nlp

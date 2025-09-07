@@ -114,3 +114,29 @@ def test_tokenizer_attributes_exist() -> None:
 
     except OSError:
         pytest.skip("spaCy model 'en_core_web_trf' not available")
+
+
+def test_custom_lemmatization_fixes() -> None:
+    """Test that custom fallback lemmatizer fixes broken compound word lemmatization."""
+    try:
+        nlp = load_model(max_length=1000)
+
+        # Test cases for words that spaCy's default lemmatizer breaks
+        test_cases = [
+            ("shellshocked", "shellshocked"),
+            ("multitasker", "multitasker"),
+            ("multitasking", "multitasking"),
+            ("shocked", "shock"),
+            ("tasker", "tasker"),
+            ("walker", "walker"),
+            ("worked", "work"),
+        ]
+
+        for word, expected_lemma in test_cases:
+            doc = nlp(word)
+            assert len(doc) == 1, f"Expected 1 token for '{word}', got {len(doc)}"
+            token = doc[0]
+            assert token.lemma_ == expected_lemma, f"Expected lemma '{expected_lemma}' for '{word}', got '{token.lemma_}'"
+
+    except OSError:
+        pytest.skip("spaCy model 'en_core_web_trf' not available")
