@@ -4,9 +4,11 @@ A CLI tool for producing an English word-frequency datasets as .csv files from l
 Existing solutions produced too many nonsense/malformed tokens and included unnecessary metadata in their outputs.
 I wanted a "batteries-included", easy-to-use, word frequency counter that could be pointed at individual text files.
 
+Note: Claude Code was used extensively for implementation
 
 ## Description
 - Uses spaCy's transformer model (`en_core_web_trf`) for lemmatization, with a custom fallback for known lemmatization errors
+- Disables spaCy's tokenizer for a custom tokenizer
 - Relies on known English language heuristics (such as the fun fact that the longest English word is "Pneumonoultramicroscopicsilicovolcanoconiosis" at 45 letters)
 - Removes all tokens with non-English unicode characters such as diacritics
 - Support for batched and parallel processing
@@ -54,6 +56,14 @@ Parameters:
 Note on memory pressure:
 ```
 total_memory_footprint ~= n_process x batch_size x chunk_size = n_process x batch_size x max_seq_len x embedding_dim
-```
 
+# Spacy's models represent each token with a 300-dimensional vector of FP32 (4 bytes each).
+# Each process also loads a ~1.5GB model into memory
+total_memory_footprint_in_gb = (n_process x batch_size x 500,000 x 300 x 4 / (1024 ^ 3)) + + (n_process x 1.5)
+```
+Will vary by system, but you should leave ~6GB overhead for the OS.
 If you find yourself going OOM, reduce `batch_size` first then `chunk_size`
+
+## Contributing
+
+Contributions are welcome. [Check CONTRIBUTING.md](CONTRIBUTING.md)
