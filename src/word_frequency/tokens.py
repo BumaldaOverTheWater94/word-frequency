@@ -88,8 +88,8 @@ def filter_token(token: spacy.tokens.Token) -> bool:
     if not re.search(r"[aeiouy]", lemma):
         return False
 
-    # no english word is longer than 46 characters
-    if len(lemma) > 46:
+    # no english word is longer than 45 characters
+    if len(lemma) > 45:
         return False
 
     return True
