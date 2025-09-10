@@ -66,4 +66,4 @@ If you find yourself going OOM, reduce `batch_size` first then `chunk_size`
 
 ## Contributing
 
-Contributions are welcome. [Check CONTRIBUTING.md](CONTRIBUTING.md)
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md)

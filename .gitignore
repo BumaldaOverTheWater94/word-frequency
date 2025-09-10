@@ -16,5 +16,4 @@ wheels/
 .DS_Store
 
 # Coding agents
-.serena/
 .claude/
